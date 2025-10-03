@@ -1,246 +1,417 @@
-# System Architecture
+# Battery Technologies - System Architecture
 
-> **Note**: This is a template file. Update with your project's actual architecture.
+## Overview
 
-## 🏗️ Overview
+The Battery Technologies application is a modern, cloud-native field service management system built with Next.js 14+ and deployed on Vercel. The architecture follows a serverless, event-driven pattern optimized for scalability, offline capabilities, and mobile-first user experience.
 
-Brief description of the system architecture and key design decisions.
+## High-Level Architecture
 
-## 🎯 Architecture Principles
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        A[Web Browser] --> B[PWA App]
+        C[Mobile Browser] --> B
+        D[Desktop Browser] --> B
+    end
+    
+    subgraph "CDN & Edge"
+        E[Vercel Edge Network]
+        F[Static Assets]
+    end
+    
+    subgraph "Application Layer"
+        G[Next.js App Router]
+        H[API Routes]
+        I[Middleware]
+        J[Authentication]
+    end
+    
+    subgraph "Data Layer"
+        K[PostgreSQL Database]
+        L[Prisma ORM]
+        M[Cloud Storage]
+    end
+    
+    subgraph "External Services"
+        N[Clerk Auth]
+        O[Resend Email]
+        P[Mapbox Maps]
+        Q[Cloudflare R2]
+    end
+    
+    B --> E
+    E --> G
+    G --> H
+    H --> L
+    L --> K
+    H --> M
+    J --> N
+    H --> O
+    B --> P
+    M --> Q
+```
 
-- **Principle 1**: Description and rationale
-- **Principle 2**: Description and rationale
-- **Principle 3**: Description and rationale
+## System Components
 
-## 📦 System Components
+### 1. Frontend Architecture
 
-### Frontend
-- **Technology**: Next.js 14+ (App Router)
+#### 1.1 Next.js App Router
+- **Framework**: Next.js 14+ with App Router
 - **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind v4
-- **State Management**: [Your choice]
-- **Forms**: [Your choice]
-- **Testing**: Jest + React Testing Library + Playwright
+- **Styling**: Tailwind CSS v4
+- **State Management**: React Context + Local State
+- **PWA**: Service Worker with offline capabilities
 
-### Backend/API
-- **Framework**: Next.js API Routes / Server Actions
-- **Authentication**: [Your choice - NextAuth, Auth0, etc.]
-- **Authorization**: [Your approach]
-- **Validation**: [Your choice - Zod, Yup, etc.]
+#### 1.2 Component Architecture
+```
+src/
+├── app/                    # App Router pages
+│   ├── (auth)/            # Authentication routes
+│   ├── dashboard/         # Main dashboard
+│   ├── jobs/              # Job management
+│   ├── customers/         # Customer management
+│   └── technician/        # Technician interface
+├── components/            # Reusable components
+│   ├── ui/               # Base UI components
+│   ├── forms/            # Form components
+│   └── layout/           # Layout components
+├── lib/                  # Utility functions
+└── types/                # TypeScript definitions
+```
 
-### Database
-- **Provider**: Neon Postgres
+#### 1.3 Progressive Web App (PWA)
+- **Service Worker**: Offline functionality and caching
+- **Manifest**: App installation and branding
+- **Offline Storage**: IndexedDB for local data persistence
+- **Background Sync**: Queue operations for when online
+
+### 2. Backend Architecture
+
+#### 2.1 API Layer
+- **Framework**: Next.js API Routes
+- **Runtime**: Node.js (serverless functions)
+- **Authentication**: Clerk integration
+- **Validation**: Zod schema validation
+- **Error Handling**: Centralized error management
+
+#### 2.2 Database Architecture
+- **Database**: PostgreSQL (Neon)
 - **ORM**: Prisma
-- **Migrations**: Prisma Migrate
-- **Connection Pooling**: Neon Serverless Driver
+- **Migrations**: Version-controlled schema changes
+- **Connection Pooling**: Optimized for serverless
 
-### Infrastructure
-- **Hosting**: Vercel
-- **Database**: Neon Postgres
-- **CDN**: Vercel Edge Network
-- **Monitoring**: [Vercel Analytics, Sentry, etc.]
-- **Error Tracking**: [Sentry, etc.]
-
-## 🔄 Data Flow
-
-```
-User → Next.js Frontend → API Routes → Prisma → Neon Postgres
-                                      ↓
-                              External Services
-```
-
-### Key Flows
-
-#### Authentication Flow
-1. User submits credentials
-2. API validates against database
-3. JWT token issued
-4. Token stored in HTTP-only cookie
-5. Subsequent requests include token
-
-#### Data Mutation Flow
-1. User action triggers form submission
-2. Client-side validation
-3. API route receives request
-4. Server-side validation
-5. Prisma transaction updates database
-6. Response sent to client
-7. UI updates
-
-## 🗄️ Database Schema
-
-> See `prisma/schema.prisma` for full schema
-
-### Core Entities
-
-#### User
+#### 2.3 Data Models
 ```prisma
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  role      UserRole
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // Relations
+  jobs      Job[]
+  customers Customer[]
+}
+
+model Customer {
+  id          String         @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  type        CustomerType
+  locations   Location[]
+  jobs        Job[]
+  contacts    Contact[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Job {
+  id              String      @id @default(cuid())
+  jobNumber       String      @unique
+  title           String
+  description     String?
+  status          JobStatus
+  serviceType     ServiceType
+  scheduledDate   DateTime?
+  completedDate   DateTime?
+  customerId      String
+  technicianId    String?
+  photos          JobPhoto[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  technician      User?       @relation(fields: [technicianId], references: [id])
 }
 ```
 
-#### [Your Entity]
-```prisma
-// Add your models here
+### 3. Authentication & Authorization
+
+#### 3.1 Authentication Flow
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as App
+    participant C as Clerk
+    participant D as Database
+    
+    U->>A: Access protected route
+    A->>C: Check authentication
+    C->>A: Return user session
+    A->>D: Query user permissions
+    D->>A: Return user role
+    A->>U: Grant/deny access
 ```
 
-### Relationships
-- User → Posts (one-to-many)
-- Post → Comments (one-to-many)
-- [Your relationships]
+#### 3.2 Role-Based Access Control
+- **Admin**: Full system access, user management
+- **Technician**: Job access, customer information, offline capabilities
+- **Service Provider**: Limited job access, service area restrictions
 
-## 🔌 API Design
+### 4. Offline Architecture
 
-### RESTful Endpoints
+#### 4.1 Offline-First Design
+- **Service Worker**: Intercepts network requests
+- **IndexedDB**: Local data storage
+- **Background Sync**: Queue operations for sync
+- **Conflict Resolution**: Last-write-wins with user notification
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET    | /api/users | List users | Yes |
-| POST   | /api/users | Create user | No |
-| GET    | /api/users/:id | Get user | Yes |
-| PUT    | /api/users/:id | Update user | Yes |
-| DELETE | /api/users/:id | Delete user | Yes |
-
-### API Response Format
-
-```json
-{
-  "success": true,
-  "data": {},
-  "error": null,
-  "meta": {
-    "timestamp": "2024-01-01T00:00:00Z",
-    "version": "1.0"
-  }
-}
+#### 4.2 Data Synchronization
+```mermaid
+graph LR
+    A[Local Changes] --> B[Sync Queue]
+    B --> C[Network Check]
+    C -->|Online| D[Upload Changes]
+    C -->|Offline| E[Store in Queue]
+    D --> F[Update Server]
+    F --> G[Clear Queue]
+    E --> H[Retry Later]
 ```
 
-### Error Responses
+### 5. File Storage Architecture
 
-```json
-{
-  "success": false,
-  "data": null,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable error message",
-    "details": {}
-  }
-}
+#### 5.1 Cloud Storage
+- **Primary**: Cloudflare R2 (S3-compatible)
+- **CDN**: Vercel Edge Network
+- **Optimization**: Image compression and resizing
+- **Security**: Signed URLs for secure access
+
+#### 5.2 File Upload Flow
+```mermaid
+sequenceDiagram
+    participant T as Technician
+    participant A as App
+    participant S as Storage
+    participant D as Database
+    
+    T->>A: Upload photo
+    A->>S: Generate signed URL
+    S->>A: Return upload URL
+    A->>S: Upload file
+    S->>A: Confirm upload
+    A->>D: Save file reference
+    D->>A: Confirm save
+    A->>T: Show success
 ```
 
-## 🔐 Security Architecture
+### 6. Real-time Features
 
-### Authentication
-- [Your authentication strategy]
-- Session management approach
-- Token refresh mechanism
+#### 6.1 WebSocket Integration
+- **Connection**: WebSocket for real-time updates
+- **Events**: Job status changes, new assignments
+- **Fallback**: Polling for offline scenarios
 
-### Authorization
-- Role-based access control (RBAC)
-- Permission model
-- Data access policies
+#### 6.2 Push Notifications
+- **Service Worker**: Handle push notifications
+- **Triggers**: New job assignments, status updates
+- **Personalization**: Role-based notification preferences
 
-### Data Protection
-- Encryption at rest: [Approach]
-- Encryption in transit: HTTPS/TLS
-- PII handling: [Approach]
-- Audit logging: [Approach]
+## Deployment Architecture
 
-## ⚡ Performance Architecture
+### 1. Vercel Deployment
 
-### Caching Strategy
-- **Client-side**: React Query / SWR
-- **Server-side**: Next.js caching
-- **Database**: Connection pooling
-- **CDN**: Static asset caching
+#### 1.1 Serverless Functions
+- **Runtime**: Node.js 20+
+- **Regions**: Global edge deployment
+- **Scaling**: Automatic based on demand
+- **Cold Start**: Optimized with connection pooling
 
-### Optimization
-- Image optimization: Next.js Image component
-- Code splitting: Automatic with App Router
-- Bundle optimization: Tree shaking, minification
-- Database indexing: [Key indexes]
+#### 1.2 Static Assets
+- **CDN**: Vercel Edge Network
+- **Caching**: Aggressive caching for static content
+- **Compression**: Gzip/Brotli compression
+- **Image Optimization**: Next.js Image component
 
-## 📊 Monitoring & Observability
+### 2. Database Deployment
 
-### Metrics
-- Application performance
-- API response times
-- Error rates
-- User analytics
+#### 2.1 Neon PostgreSQL
+- **Hosting**: Serverless PostgreSQL
+- **Scaling**: Automatic scaling based on usage
+- **Backups**: Automated daily backups
+- **Branching**: Database branching for development
 
-### Logging
-- Application logs
-- Error logs
-- Audit logs
-- Performance logs
+#### 2.2 Connection Management
+- **Pooling**: Prisma connection pooling
+- **Timeouts**: Optimized for serverless
+- **Retries**: Exponential backoff for failures
 
-### Alerting
-- Error threshold alerts
-- Performance degradation alerts
-- Security alerts
+### 3. Environment Configuration
 
-## 🚀 Deployment Architecture
+#### 3.1 Environment Variables
+```bash
+# Database
+DATABASE_URL="postgresql://..."
 
-### Environments
-- **Development**: Local + feature branches
-- **Staging**: Preview deployments (Vercel)
-- **Production**: Main branch (Vercel)
+# Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_..."
+CLERK_SECRET_KEY="sk_..."
 
-### CI/CD Pipeline
-1. Push to GitHub
-2. GitHub Actions runs CI
-3. Lint, typecheck, test
-4. Build application
-5. Deploy to Vercel
-6. Run E2E tests
-7. Health checks
+# Storage
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_BUCKET_NAME="..."
+R2_ENDPOINT="..."
 
-### Database Migrations
-- Development: `prisma migrate dev`
-- Staging: Automatic on deploy
-- Production: Manual approval + `prisma migrate deploy`
+# Email
+RESEND_API_KEY="..."
 
-## 📚 Architecture Decision Records
+# Maps
+NEXT_PUBLIC_MAPBOX_TOKEN="..."
+```
 
-See `/docs/adrs/` folder for detailed architectural decisions:
+#### 3.2 Environment Separation
+- **Development**: Local development with staging database
+- **Preview**: Vercel preview deployments
+- **Production**: Production database and services
 
-- [ADR-001: Technology Stack Selection](adrs/001-technology-stack.md)
-- [ADR-002: Database Choice](adrs/002-database-choice.md)
-- [Add your ADRs here]
+## Security Architecture
 
-## 🔗 External Integrations
+### 1. Authentication Security
+- **Provider**: Clerk (enterprise-grade)
+- **Sessions**: Secure HTTP-only cookies
+- **CSRF**: Built-in CSRF protection
+- **Rate Limiting**: API rate limiting
 
-### Third-Party Services
-| Service | Purpose | Documentation |
-|---------|---------|---------------|
-| [Service] | [Purpose] | [Link] |
+### 2. Data Security
+- **Encryption**: TLS 1.3 in transit
+- **Database**: Encrypted at rest
+- **Secrets**: Environment variable management
+- **Access Control**: Role-based permissions
 
-## 📋 Technical Constraints
+### 3. API Security
+- **Validation**: Input validation with Zod
+- **Sanitization**: XSS protection
+- **CORS**: Configured CORS policies
+- **Headers**: Security headers middleware
 
-- **Browser Support**: Modern browsers (last 2 versions)
-- **Performance Target**: <2s page load, <100ms API response
-- **Availability Target**: 99.9% uptime
-- **Security**: OWASP Top 10 compliance
-- **Accessibility**: WCAG AA compliance
+## Performance Architecture
 
-## 🛠️ Development Tools
+### 1. Frontend Performance
+- **Code Splitting**: Automatic route-based splitting
+- **Lazy Loading**: Component and image lazy loading
+- **Caching**: Aggressive browser caching
+- **PWA**: Offline-first approach
 
-- **IDE**: Cursor with AI capabilities
-- **Version Control**: Git + GitHub
-- **Package Manager**: npm
-- **Code Quality**: ESLint + Prettier
+### 2. Backend Performance
+- **Serverless**: Auto-scaling functions
+- **Database**: Connection pooling and query optimization
+- **CDN**: Global edge distribution
+- **Caching**: Redis for session storage
+
+### 3. Monitoring & Observability
+- **Metrics**: Vercel Analytics
+- **Logging**: Structured logging
+- **Error Tracking**: Sentry integration
+- **Performance**: Core Web Vitals monitoring
+
+## Scalability Considerations
+
+### 1. Horizontal Scaling
+- **Serverless**: Automatic scaling
+- **Database**: Read replicas for read-heavy operations
+- **CDN**: Global edge distribution
+- **Storage**: Distributed file storage
+
+### 2. Vertical Scaling
+- **Database**: Connection pooling optimization
+- **Functions**: Memory and timeout optimization
+- **Caching**: Multi-layer caching strategy
+
+### 3. Load Handling
+- **Peak Loads**: Auto-scaling serverless functions
+- **Database**: Connection pooling and query optimization
+- **Storage**: CDN for static assets
+- **Offline**: Graceful degradation
+
+## Disaster Recovery
+
+### 1. Data Backup
+- **Database**: Automated daily backups
+- **Files**: Cross-region replication
+- **Code**: Git repository backup
+- **Configuration**: Environment variable backup
+
+### 2. Recovery Procedures
+- **Database**: Point-in-time recovery
+- **Application**: Blue-green deployment
+- **Files**: Cross-region failover
+- **Monitoring**: Automated alerting
+
+## Technology Stack Summary
+
+### Frontend
+- **Framework**: Next.js 14+ (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **State**: React Context + Local State
+- **PWA**: Service Worker + IndexedDB
+
+### Backend
+- **Runtime**: Node.js (Vercel Functions)
+- **API**: Next.js API Routes
+- **Database**: PostgreSQL (Neon)
+- **ORM**: Prisma
+- **Authentication**: Clerk
+
+### Infrastructure
+- **Hosting**: Vercel
+- **Database**: Neon PostgreSQL
+- **Storage**: Cloudflare R2
+- **CDN**: Vercel Edge Network
+- **Monitoring**: Vercel Analytics + Sentry
+
+### Development
 - **Testing**: Jest + Playwright
+- **Linting**: ESLint + Prettier
 - **CI/CD**: GitHub Actions
+- **Deployment**: Vercel Git integration
+
+## Future Architecture Considerations
+
+### 1. Microservices Migration
+- **API Gateway**: Centralized API management
+- **Service Decomposition**: Domain-based services
+- **Event Sourcing**: Event-driven architecture
+- **Message Queues**: Async processing
+
+### 2. Advanced Features
+- **Real-time**: WebSocket integration
+- **AI/ML**: Predictive analytics
+- **IoT**: Device integration
+- **Mobile**: Native app development
+
+### 3. Performance Optimization
+- **Edge Computing**: Edge functions
+- **GraphQL**: Efficient data fetching
+- **Caching**: Multi-layer caching
+- **Optimization**: Advanced performance tuning
 
 ---
 
-**Last Updated**: [Date]
-**Architecture Owner**: [Name/Team]
-**Next Review**: [Date]
-
+*Document Version: 1.0*  
+*Last Updated: [Current Date]*  
+*Next Review: [Review Date]*
