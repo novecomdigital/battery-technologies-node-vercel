@@ -1,161 +1,236 @@
-// Prisma Schema File
-// Learn more: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// ==================================
-// Example Models
-// ==================================
-
-// User Model - Basic authentication and profile
+// Battery Technologies Users (employees of Battery Technologies)
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String?
-  image         String?
-  
-  // Timestamps
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // Relations
-  accounts      Account[]
-  sessions      Session[]
-  posts         Post[]
-  
-  @@index([email])
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  clerkId   String   @unique
+  role      UserRole @default(TECHNICIAN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  jobs          Job[]          @relation("JobAssignedTo")
+
   @@map("users")
 }
 
-// Account Model - OAuth accounts (for NextAuth)
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+// Service Provider Customers (companies that hire Battery Technologies)
+model ServiceProvider {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?
+  status        CustomerStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relationships
+  customers      Customer[]
+  jobs           Job[]
 
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-  @@map("accounts")
+  @@map("service_providers")
 }
 
-// Session Model - User sessions (for NextAuth)
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// End Customers (can be referred by Service Providers or direct customers)
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?
+  status        CustomerStatus @default(ACTIVE)
+  customerType  CustomerType @default(DIRECT) // DIRECT or REFERRED
+  referralNotes String? // Notes about the referral relationship
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@index([userId])
-  @@map("sessions")
+  // Relationships
+  serviceProviderId String? // Optional - only for referred customers
+  serviceProvider   ServiceProvider? @relation(fields: [serviceProviderId], references: [id], onDelete: SetNull)
+  locations      Location[]
+  jobs           Job[]
+  contacts       Contact[]
+
+  @@map("customers")
 }
 
-// VerificationToken Model - Email verification tokens (for NextAuth)
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
-// ==================================
-// Example Application Models
-// ==================================
-
-// Post Model - Example content model
-model Post {
+// Customer Locations
+model Location {
   id          String   @id @default(cuid())
-  title       String
-  content     String?  @db.Text
-  published   Boolean  @default(false)
-  authorId    String
-  
-  // SEO
-  slug        String?  @unique
-  description String?
-  
-  // Metadata
-  views       Int      @default(0)
-  
-  // Timestamps
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  country     String
+  phone       String?
+  email       String?
+  status      LocationStatus @default(ACTIVE)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  publishedAt DateTime?
-  
-  // Relations
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  tags        Tag[]
-  
-  @@index([authorId])
-  @@index([published])
-  @@index([slug])
-  @@index([createdAt])
-  @@map("posts")
+
+  // Relationships
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobs        Job[]
+  contacts    Contact[]
+
+  @@map("locations")
 }
 
-// Tag Model - Content categorization
-model Tag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  posts     Post[]
-  
-  @@index([slug])
-  @@map("tags")
+// Contacts (can be customer-specific or location-specific)
+model Contact {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  title       String?
+  department  String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships - can belong to either customer or location
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  jobs        Job[]     @relation("JobContact")
+
+  @@map("contacts")
 }
 
-// ==================================
-// Add Your Models Below
-// ==================================
+// Battery Servicing Jobs
+model Job {
+  id              String      @id @default(cuid())
+  jobNumber       String      @unique
+  description     String?
+  status          JobStatus   @default(OPEN)
+  estimatedHours  Float?
+  actualHours     Float?
+  startDate       DateTime?
+  endDate         DateTime?
+  dueDate         DateTime?
+  notes           String?
+  batteryType     String?     // Type of battery being serviced
+  batteryModel    String?     // Model of the battery
+  batterySerial   String?     // Serial number of the battery
+  serviceType     ServiceType @default(BATTERY_INSPECTION)
+  equipmentType   String?     // Type of equipment (e.g., "Forklift", "UPS", "Emergency Lighting")
+  equipmentModel  String?     // Model of the equipment
+  equipmentSerial String?     // Serial number of the equipment
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-// TODO: Replace example models above with your actual data model
-// Follow these patterns:
-//
-// 1. Use descriptive model names (PascalCase)
-// 2. Add @@map("table_name") for custom table names (snake_case)
-// 3. Include createdAt/updatedAt timestamps
-// 4. Add appropriate indexes for query performance
-// 5. Define relationships clearly
-// 6. Use @db.Text for long text fields
-// 7. Consider soft deletes if needed (deletedAt field)
-//
-// Example:
-//
-// model YourModel {
-//   id        String   @id @default(cuid())
-//   field     String
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-//
-//   @@index([field])
-//   @@map("your_models")
-// }
+  // Relationships
+  serviceProviderId String? // Optional - only for referred customers
+  serviceProvider   ServiceProvider? @relation(fields: [serviceProviderId], references: [id], onDelete: SetNull)
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  locationId      String?
+  location        Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  contactId       String?
+  contact         Contact? @relation("JobContact", fields: [contactId], references: [id], onDelete: SetNull)
+  assignedToId    String?
+  assignedTo      User? @relation("JobAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  photos          JobPhoto[]
 
+  @@map("jobs")
+}
+
+// Job Photos
+model JobPhoto {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  caption     String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  jobId       String
+  job         Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_photos")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  MANAGER
+  TECHNICIAN
+  VIEWER
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CustomerType {
+  DIRECT      // Battery Technologies' direct customers
+  REFERRED    // Customers referred by service providers
+}
+
+enum LocationStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+}
+
+enum JobStatus {
+  OPEN
+  COMPLETE
+  VISITED
+  NEEDS_QUOTE
+  ON_HOLD
+  CANCELLED
+}
+
+enum ServiceType {
+  BATTERY_INSPECTION
+  CHARGER_INSPECTION
+  BATTERY_CHARGER_INSPECTION
+  SUPPLY_FIT_BATTERY
+  SUPPLY_DELIVER_CHARGER
+  SUPPLY_FIT_CELLS
+  CHARGER_RENTAL
+  BATTERY_WATER_TOPPING
+  BATTERY_REPAIR
+  BATTERY_RENTAL
+  CHARGER_REPAIR
+  PARTS_ORDERED
+  SITE_SURVEY
+  DELIVERY
+  COLLECTION
+  OTHER
+}

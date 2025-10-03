@@ -1,10 +1,89 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Brand Color Variables */
+  --brand-primary: #5DA148;
+  --brand-primary-dark: #4A7F3A;
+  --brand-primary-light: #7BB85C;
+  --brand-secondary: #2D5A1F;
+  --brand-accent: #8BC34A;
+  --brand-success: #4CAF50;
+  --brand-warning: #FF9800;
+  --brand-error: #F44336;
+}
+
+/* PWA Background Color for iOS - for pull-to-refresh and splash */
+@media (display-mode: standalone) {
+  /* Default portrait mode - green top */
+  html {
+    background-color: #5DA148 !important;
+  }
+  
+  /* Main content container should be white */
+  .min-h-screen {
+    background-color: #ffffff !important;
+  }
+  
+  /* Ensure the main app content has white background */
+  main, .main-content {
+    background-color: #ffffff !important;
+  }
+  
+  /* iOS specific pull-to-refresh background - only for the html element */
+  @supports (-webkit-touch-callout: none) {
+    html {
+      background-color: #5DA148 !important;
+    }
+  }
+  
+  /* Landscape mode - all white (only when not in photo view) */
+  @media screen and (orientation: landscape) {
+    html:not(.photo-view-mode) {
+      background-color: #ffffff !important;
+    }
+    
+    @supports (-webkit-touch-callout: none) {
+      html:not(.photo-view-mode) {
+        background-color: #ffffff !important;
+      }
+    }
+  }
+  
+  /* Photo view mode - all black in any orientation */
+  &.photo-view-mode {
+    html {
+      background-color: #000000 !important;
+    }
+    
+    @supports (-webkit-touch-callout: none) {
+      html {
+        background-color: #000000 !important;
+      }
+    }
+    
+    /* Override landscape white when in photo view */
+    @media screen and (orientation: landscape) {
+      html {
+        background-color: #000000 !important;
+      }
+      
+      @supports (-webkit-touch-callout: none) {
+        html {
+          background-color: #000000 !important;
+        }
+      }
+    }
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -15,13 +94,204 @@
 }
 
 body {
-  color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Ensure proper background colors in PWA mode */
+@media (display-mode: standalone) {
+  /* Specific overrides for common elements */
+  .bg-gray-50 {
+    background-color: #f9fafb !important;
+  }
+  
+  .bg-white {
+    background-color: #ffffff !important;
+  }
+  
+  /* Specific button background overrides - use actual Tailwind colors */
+  .bg-green-600 {
+    background-color: #16a34a !important;
+  }
+  
+  .bg-green-700 {
+    background-color: #15803d !important;
+  }
+  
+  .bg-blue-600 {
+    background-color: #2563eb !important;
+  }
+  
+  .bg-gray-600 {
+    background-color: #4b5563 !important;
+  }
+  
+  .bg-red-600 {
+    background-color: #dc2626 !important;
+  }
+  
+  /* Toggle and switch backgrounds */
+  .bg-gray-200 {
+    background-color: #e5e7eb !important;
+  }
+  
+  .bg-gray-300 {
+    background-color: #d1d5db !important;
+  }
+  
+  .bg-gray-100 {
+    background-color: #f3f4f6 !important;
   }
 }
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Prevent layout shift from scrollbar */
+html {
+  overflow-y: scroll;
+}
+
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  --tw-ring-color: var(--brand-primary);
+}
+
+/* Prevent zooming on mobile devices */
+html, body {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Allow text selection in input fields and text areas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Prevent double-tap zoom and pinch zoom */
+* {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* More aggressive zoom prevention */
+@media screen and (max-width: 768px) {
+  html {
+    -webkit-text-size-adjust: none;
+    -moz-text-size-adjust: none;
+    -ms-text-size-adjust: none;
+    text-size-adjust: none;
+  }
+  
+  body {
+    -webkit-text-size-adjust: none;
+    -moz-text-size-adjust: none;
+    -ms-text-size-adjust: none;
+    text-size-adjust: none;
+  }
+}
+
+/* Photo modal orientation handling */
+.photo-modal .landscape-view {
+  display: none;
+}
+
+.photo-modal .portrait-view {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media screen and (orientation: landscape) {
+  .photo-modal {
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+  
+  .photo-modal .landscape-view {
+    display: block !important;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+  
+  .photo-modal .portrait-view {
+    display: none !important;
+  }
+  
+  /* Hide all controls in landscape except essential ones */
+  .photo-modal .portrait-view button,
+  .photo-modal .portrait-view .absolute {
+    display: none !important;
+  }
+  
+  /* Only show landscape controls */
+  .photo-modal .landscape-view button,
+  .photo-modal .landscape-view .absolute {
+    display: block !important;
+  }
+}
+

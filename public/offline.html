@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Battery Technologies</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #374151;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        p {
+            color: #6b7280;
+            margin-bottom: 24px;
+            line-height: 1.5;
+            text-align: center;
+        }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: #fef3c7;
+            color: #92400e;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-bottom: 24px;
+            width: 100%;
+            justify-content: center;
+        }
+        .status::before {
+            content: "⚠️";
+            margin-right: 8px;
+        }
+        .navigation-section {
+            margin: 24px 0;
+        }
+        .navigation-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 16px;
+        }
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .nav-btn {
+            background-color: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+        .nav-btn:hover {
+            background-color: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        .nav-btn.primary {
+            background-color: #059669;
+            color: white;
+            border-color: #059669;
+        }
+        .nav-btn.primary:hover {
+            background-color: #047857;
+            border-color: #047857;
+        }
+        .retry-btn {
+            background-color: #059669;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 16px;
+        }
+        .retry-btn:hover {
+            background-color: #047857;
+        }
+        .retry-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .offline-features {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .offline-features h3 {
+            color: #0369a1;
+            margin: 0 0 12px 0;
+            font-size: 16px;
+        }
+        .offline-features ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #0369a1;
+        }
+        .offline-features li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>You're Offline</h1>
+        <div class="status">No Internet Connection</div>
+        <p id="offline-message">
+            Don't worry! You can still access cached pages and take photos. 
+            Everything will sync automatically when you're back online.
+        </p>
+
+        <div class="offline-features">
+            <h3>Available Offline Features:</h3>
+            <ul>
+                <li>View cached job and customer pages</li>
+                <li>Take photos and add notes</li>
+                <li>Update job status and details</li>
+                <li>All changes sync when online</li>
+            </ul>
+        </div>
+
+        <div class="navigation-section">
+            <div class="navigation-title">Quick Navigation</div>
+            <div class="nav-buttons">
+                <a href="/dashboard" class="nav-btn primary">Dashboard</a>
+                <a href="/jobs" class="nav-btn">Jobs</a>
+                <a href="/customers" class="nav-btn">Customers</a>
+                <a href="/technician" class="nav-btn">Technician</a>
+            </div>
+        </div>
+
+        <button class="retry-btn" onclick="retryConnection()">
+            Try Again
+        </button>
+    </div>
+
+    <script>
+        // Check which pages are available offline
+        async function checkOfflinePages() {
+            const pages = ['/dashboard', '/jobs', '/customers', '/technician'];
+            const availablePages = [];
+            
+            // Get all cache names
+            const cacheNames = await caches.keys();
+            console.log('Available caches:', cacheNames);
+            
+            for (const page of pages) {
+                let isCached = false;
+                
+                // Check in all caches
+                for (const cacheName of cacheNames) {
+                    try {
+                        const cache = await caches.open(cacheName);
+                        const response = await cache.match(page);
+                        if (response && response.ok) {
+                            console.log(`✅ Found ${page} in cache: ${cacheName}`);
+                            isCached = true;
+                            break;
+                        }
+                    } catch (error) {
+                        console.log(`Error checking ${page} in cache ${cacheName}:`, error);
+                    }
+                }
+                
+                if (isCached) {
+                    availablePages.push(page);
+                } else {
+                    console.log(`❌ Page not cached: ${page}`);
+                }
+            }
+            
+            console.log('Available offline pages:', availablePages);
+            return availablePages;
+        }
+
+        // Update navigation buttons based on available pages
+        async function updateNavigation() {
+            const availablePages = await checkOfflinePages();
+            const navButtons = document.querySelectorAll('.nav-btn');
+            
+            navButtons.forEach(btn => {
+                const href = btn.getAttribute('href');
+                if (href) {
+                    if (availablePages.includes(href)) {
+                        // Page is available offline - show checkmark
+                        btn.innerHTML = `✅ ${btn.textContent}`;
+                        btn.style.backgroundColor = '#d1fae5';
+                        btn.style.borderColor = '#10b981';
+                        btn.style.color = '#065f46';
+                        btn.onclick = null; // Remove any previous click handlers
+                    } else {
+                        // Page is not available offline - show X and disable
+                        btn.innerHTML = `❌ ${btn.textContent}`;
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                        btn.style.backgroundColor = '#fef2f2';
+                        btn.style.borderColor = '#fca5a5';
+                        btn.style.color = '#991b1b';
+                        btn.onclick = (e) => {
+                            e.preventDefault();
+                            alert('This page is not available offline. Please check your connection and try again.');
+                        };
+                    }
+                }
+            });
+        }
+
+        function retryConnection() {
+            const btn = document.querySelector('.retry-btn');
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            
+            // Try multiple endpoints to test connectivity
+            const testUrls = [
+                window.location.origin + '/',
+                window.location.origin + '/manifest.json',
+                window.location.origin + '/sw.js'
+            ];
+            
+            let connectionRestored = false;
+            
+            Promise.allSettled(
+                testUrls.map(url => 
+                    fetch(url, { 
+                        method: 'HEAD',
+                        cache: 'no-cache',
+                        signal: AbortSignal.timeout(3000)
+                    })
+                )
+            ).then(results => {
+                // If any request succeeded, we're back online
+                connectionRestored = results.some(result => result.status === 'fulfilled');
+                
+                if (connectionRestored) {
+                    console.log('✅ Connection restored');
+                    window.location.reload();
+                } else {
+                    console.log('❌ Still offline');
+                    btn.disabled = false;
+                    btn.textContent = 'Try Again';
+                }
+            }).catch(() => {
+                btn.disabled = false;
+                btn.textContent = 'Try Again';
+            });
+        }
+
+        // Check if this is a local network installation
+        function checkLocalNetwork() {
+            const hostname = window.location.hostname;
+            const isLocalNetwork = hostname.startsWith('192.168.') || 
+                                 hostname.startsWith('10.') || 
+                                 hostname.startsWith('172.') || 
+                                 hostname === 'localhost' || 
+                                 hostname === '127.0.0.1';
+            
+            if (isLocalNetwork) {
+                const message = document.getElementById('offline-message');
+                if (message) {
+                    message.innerHTML = `
+                        <strong>Local Network PWA Detected</strong><br>
+                        You're using the app from a local network address (${hostname}). 
+                        Make sure your development server is running and accessible. 
+                        You can still use cached pages and take photos offline.
+                    `;
+                }
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLocalNetwork();
+            updateNavigation();
+        });
+
+        // Listen for online event
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+
+        // Check connection periodically
+        setInterval(() => {
+            if (navigator.onLine) {
+                retryConnection();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

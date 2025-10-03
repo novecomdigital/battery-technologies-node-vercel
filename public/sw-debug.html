@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Worker Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        #log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Service Worker Debug Tool</h1>
+        
+        <div id="status" class="status info">
+            Checking service worker status...
+        </div>
+        
+        <div>
+            <button onclick="checkServiceWorker()">Check Service Worker</button>
+            <button onclick="registerServiceWorker()">Register Service Worker</button>
+            <button onclick="unregisterServiceWorker()">Unregister Service Worker</button>
+            <button onclick="clearCaches()">Clear All Caches</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <h3>Log Output:</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        async function checkServiceWorker() {
+            log('🔍 Checking service worker status...');
+            
+            if (!('serviceWorker' in navigator)) {
+                log('❌ Service workers not supported');
+                updateStatus('Service workers not supported', 'error');
+                return;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                
+                if (registration) {
+                    log(`✅ Service worker found: ${registration.scope}`);
+                    log(`📊 Active worker: ${registration.active ? registration.active.state : 'none'}`);
+                    log(`📊 Waiting worker: ${registration.waiting ? registration.waiting.state : 'none'}`);
+                    log(`📊 Installing worker: ${registration.installing ? registration.installing.state : 'none'}`);
+                    
+                    updateStatus('Service worker is registered', 'success');
+                } else {
+                    log('❌ No service worker registered');
+                    updateStatus('No service worker registered', 'error');
+                }
+                
+                // Check caches
+                const cacheNames = await caches.keys();
+                log(`📦 Available caches: ${cacheNames.join(', ')}`);
+                
+            } catch (error) {
+                log(`❌ Error checking service worker: ${error.message}`);
+                updateStatus('Error checking service worker', 'error');
+            }
+        }
+
+        async function registerServiceWorker() {
+            log('🔄 Registering service worker...');
+            
+            try {
+                const swUrl = `${window.location.origin}/sw.js?v=${Date.now()}`;
+                log(`🔗 Registering at: ${swUrl}`);
+                
+                const registration = await navigator.serviceWorker.register(swUrl, {
+                    scope: '/'
+                });
+                
+                log(`✅ Service worker registered: ${registration.scope}`);
+                updateStatus('Service worker registered successfully', 'success');
+                
+                // Check for updates
+                await registration.update();
+                log('🔄 Update check completed');
+                
+            } catch (error) {
+                log(`❌ Registration failed: ${error.message}`);
+                updateStatus('Registration failed', 'error');
+            }
+        }
+
+        async function unregisterServiceWorker() {
+            log('🗑️ Unregistering service worker...');
+            
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    await registration.unregister();
+                    log('✅ Service worker unregistered');
+                    updateStatus('Service worker unregistered', 'success');
+                } else {
+                    log('❌ No service worker to unregister');
+                    updateStatus('No service worker to unregister', 'error');
+                }
+            } catch (error) {
+                log(`❌ Unregistration failed: ${error.message}`);
+                updateStatus('Unregistration failed', 'error');
+            }
+        }
+
+        async function clearCaches() {
+            log('🧹 Clearing all caches...');
+            
+            try {
+                const cacheNames = await caches.keys();
+                for (const cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    log(`🗑️ Deleted cache: ${cacheName}`);
+                }
+                log('✅ All caches cleared');
+                updateStatus('All caches cleared', 'success');
+            } catch (error) {
+                log(`❌ Error clearing caches: ${error.message}`);
+                updateStatus('Error clearing caches', 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            log('🚀 Service Worker Debug Tool loaded');
+            checkServiceWorker();
+        });
+    </script>
+</body>
+</html>
+
+

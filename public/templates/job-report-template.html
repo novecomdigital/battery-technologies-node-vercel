@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Report Template</title>
+    <style>
+        /* This is an example template file that users can customize */
+        .job-report {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c5530;
+            margin-bottom: 10px;
+        }
+        
+        .company-info h2 {
+            color: #2c5530;
+            margin: 10px 0 5px 0;
+        }
+        
+        .company-info p {
+            margin: 2px 0;
+            color: #666;
+        }
+        
+        .job-details, .equipment-details, .work-details {
+            margin-bottom: 30px;
+        }
+        
+        .job-details h3, .equipment-details h3, .work-details h3 {
+            color: #2c5530;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .job-table, .equipment-table, .time-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .job-table td, .equipment-table td, .time-table td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        
+        .job-table td:first-child, .equipment-table td:first-child, .time-table td:first-child {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            width: 25%;
+        }
+        
+        .work-description, .work-notes {
+            margin-bottom: 15px;
+        }
+        
+        .work-description p, .work-notes p {
+            margin: 5px 0;
+        }
+        
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #333;
+        }
+        
+        .signature-section {
+            width: 45%;
+        }
+        
+        .signature-line {
+            height: 40px;
+            border-bottom: 1px solid #333;
+            margin: 10px 0;
+        }
+        
+        @media print {
+            .job-report {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .signatures {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="job-report">
+        <div class="header">
+            <h1>Job Report</h1>
+            <div class="company-info">
+                <h2>{{companyName}}</h2>
+                <p>{{companyAddress}}</p>
+                <p>Phone: {{companyPhone}} | Email: {{companyEmail}}</p>
+            </div>
+        </div>
+        
+        <div class="job-details">
+            <h3>Job Information</h3>
+            <table class="job-table">
+                <tr>
+                    <td><strong>Job Number:</strong></td>
+                    <td>{{jobNumber}}</td>
+                    <td><strong>Date:</strong></td>
+                    <td>{{jobDate}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Customer:</strong></td>
+                    <td>{{customerName}}</td>
+                    <td><strong>Status:</strong></td>
+                    <td>{{jobStatus}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Service Type:</strong></td>
+                    <td>{{serviceType}}</td>
+                    <td><strong>Technician:</strong></td>
+                    <td>{{technicianName}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Location:</strong></td>
+                    <td colspan="3">{{locationAddress}}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="equipment-details">
+            <h3>Equipment Information</h3>
+            <table class="equipment-table">
+                <tr>
+                    <td><strong>Battery Type:</strong></td>
+                    <td>{{batteryType}}</td>
+                    <td><strong>Battery Model:</strong></td>
+                    <td>{{batteryModel}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Battery Serial:</strong></td>
+                    <td>{{batterySerial}}</td>
+                    <td><strong>Equipment Type:</strong></td>
+                    <td>{{equipmentType}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Equipment Model:</strong></td>
+                    <td>{{equipmentModel}}</td>
+                    <td><strong>Equipment Serial:</strong></td>
+                    <td>{{equipmentSerial}}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="work-details">
+            <h3>Work Performed</h3>
+            <div class="work-description">
+                <p><strong>Description:</strong></p>
+                <p>{{jobDescription}}</p>
+            </div>
+            
+            <div class="work-notes">
+                <p><strong>Notes:</strong></p>
+                <p>{{jobNotes}}</p>
+            </div>
+            
+            <div class="time-details">
+                <table class="time-table">
+                    <tr>
+                        <td><strong>Estimated Hours:</strong></td>
+                        <td>{{estimatedHours}}</td>
+                        <td><strong>Actual Hours:</strong></td>
+                        <td>{{actualHours}}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Start Date:</strong></td>
+                        <td>{{startDate}}</td>
+                        <td><strong>End Date:</strong></td>
+                        <td>{{endDate}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="signatures">
+            <div class="signature-section">
+                <p><strong>Technician Signature:</strong></p>
+                <div class="signature-line"></div>
+                <p>Date: _______________</p>
+            </div>
+            
+            <div class="signature-section">
+                <p><strong>Customer Signature:</strong></p>
+                <div class="signature-line"></div>
+                <p>Date: _______________</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
