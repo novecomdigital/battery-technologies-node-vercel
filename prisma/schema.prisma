@@ -1,0 +1,161 @@
+// Prisma Schema File
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ==================================
+// Example Models
+// ==================================
+
+// User Model - Basic authentication and profile
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  posts         Post[]
+  
+  @@index([email])
+  @@map("users")
+}
+
+// Account Model - OAuth accounts (for NextAuth)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// Session Model - User sessions (for NextAuth)
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// VerificationToken Model - Email verification tokens (for NextAuth)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==================================
+// Example Application Models
+// ==================================
+
+// Post Model - Example content model
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  content     String?  @db.Text
+  published   Boolean  @default(false)
+  authorId    String
+  
+  // SEO
+  slug        String?  @unique
+  description String?
+  
+  // Metadata
+  views       Int      @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  
+  // Relations
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tags        Tag[]
+  
+  @@index([authorId])
+  @@index([published])
+  @@index([slug])
+  @@index([createdAt])
+  @@map("posts")
+}
+
+// Tag Model - Content categorization
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  posts     Post[]
+  
+  @@index([slug])
+  @@map("tags")
+}
+
+// ==================================
+// Add Your Models Below
+// ==================================
+
+// TODO: Replace example models above with your actual data model
+// Follow these patterns:
+//
+// 1. Use descriptive model names (PascalCase)
+// 2. Add @@map("table_name") for custom table names (snake_case)
+// 3. Include createdAt/updatedAt timestamps
+// 4. Add appropriate indexes for query performance
+// 5. Define relationships clearly
+// 6. Use @db.Text for long text fields
+// 7. Consider soft deletes if needed (deletedAt field)
+//
+// Example:
+//
+// model YourModel {
+//   id        String   @id @default(cuid())
+//   field     String
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//
+//   @@index([field])
+//   @@map("your_models")
+// }
+
